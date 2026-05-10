@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="WordLens" />
+  <meta name="theme-color" content="#2c2825" />
+  <link rel="manifest" href="manifest.json" />
+  <title>WordLens</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">Word<span>Lens</span></div>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="explore">探索</button>
+    <button class="tab-btn" data-tab="read">閱讀</button>
+    <button class="tab-btn" data-tab="vocab">單字本</button>
+    <button class="tab-btn" data-tab="library">單字庫</button>
+    <button class="tab-btn" data-tab="chat">對話</button>
+  </div>
+</header>
+
+<!-- Reading progress bar -->
+<div id="reading-progress-bar" style="display:none;">
+  <div id="reading-progress-fill"></div>
+</div>
+
+<main>
+
+  <!-- ══ EXPLORE VIEW ══ -->
+  <div id="explore-view">
+
+    <!-- Daily picks -->
+    <div class="daily-header">
+      <div class="daily-title">📰 今日精選</div>
+      <button class="daily-refresh" id="daily-refresh-btn">↺ 更新</button>
+    </div>
+    <div id="daily-articles"></div>
+
+    <!-- News feed -->
+    <div class="rss-header">
+      <div class="daily-title">📡 今日英文新聞</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <div class="news-source-toggle">
+          <button class="nsrc-btn active" data-src="guardian">🇬🇧 Guardian</button>
+          <button class="nsrc-btn" data-src="gemini">✨ AI</button>
+        </div>
+        <button class="daily-refresh" id="rss-refresh-btn">↺ 載入</button>
+      </div>
+    </div>
+    <div class="filter-row" id="rss-source-filter">
+      <button class="filter-btn active" data-topic="world"        data-gemini-topic="World News">🌍 國際</button>
+      <button class="filter-btn"        data-topic="lifeandstyle" data-gemini-topic="Health">🏥 健康</button>
+      <button class="filter-btn"        data-topic="science"      data-gemini-topic="Science">🔬 科學</button>
+      <button class="filter-btn"        data-topic="technology"   data-gemini-topic="Technology">💻 科技</button>
+      <button class="filter-btn"        data-topic="business"     data-gemini-topic="Business">💹 財經</button>
+      <button class="filter-btn"        data-topic="culture"      data-gemini-topic="Culture">🎭 文化</button>
+    </div>
+    <div id="rss-articles"></div>
+
+    <!-- AI Generator -->
+    <div class="gen-card" id="gen-section">
+      <div class="gen-title">✨ 用AI幫我生成文章</div>
+      <div class="gen-filters">
+        <select class="gen-select" id="gen-level">
+          <option value="A1">A1 入門</option>
+          <option value="A2">A2 基礎</option>
+          <option value="B1" selected>B1 中級</option>
+          <option value="B2">B2 中高級</option>
+          <option value="C1">C1 高級</option>
+        </select>
+        <select class="gen-select" id="gen-topic">
+          <optgroup label="── 新聞 / 雜誌 ──">
+            <option value="World News">🌍 世界新聞</option>
+            <option value="Business">💹 商業財經</option>
+            <option value="Health">🏥 健康醫療</option>
+            <option value="Lifestyle">✨ 生活風格</option>
+            <option value="Tech News">📱 科技新知</option>
+          </optgroup>
+          <optgroup label="── 一般主題 ──">
+            <option value="Science">🔬 科學</option>
+            <option value="Culture">🎭 文化</option>
+            <option value="Travel">✈️ 旅遊</option>
+            <option value="Food">🍜 飲食</option>
+            <option value="Nature">🌿 自然</option>
+            <option value="History">🏛️ 歷史</option>
+            <option value="Sports">⚽ 運動</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="api-key-row" id="api-key-row">
+        <input type="password" id="api-key-input" class="api-key-input" placeholder="輸入 Gemini API Key (AIza...)" autocomplete="off" />
+        <button class="api-key-save" id="api-key-save">儲存</button>
+      </div>
+      <div id="api-key-status"></div>
+      <div class="api-key-row" id="guardian-key-row">
+        <input type="password" id="guardian-key-input" class="api-key-input" placeholder="The Guardian API Key（選填）" autocomplete="off" />
+        <button class="api-key-save" id="guardian-key-save">儲存</button>
+      </div>
+      <div id="guardian-key-status"></div>
+      <button class="btn-primary" id="gen-btn">
+        <span id="gen-icon">✨</span><span id="gen-label">生成文章</span>
+      </button>
+    </div>
+
+    <!-- Paste custom article -->
+    <details class="paste-section">
+      <summary>📋 貼上自己的文章</summary>
+      <div class="paste-inner">
+        <textarea id="article-input" placeholder="Paste your English article here..."></textarea>
+        <button class="btn-primary" id="start-btn"><span>📖</span> 開始閱讀</button>
+      </div>
+    </details>
+
+    <!-- Level filter -->
+    <div class="filter-row" id="level-filter">
+      <button class="filter-btn active" data-level="all">全部</button>
+      <button class="filter-btn" data-level="A1">A1</button>
+      <button class="filter-btn" data-level="A2">A2</button>
+      <button class="filter-btn" data-level="B1">B1</button>
+      <button class="filter-btn" data-level="B2">B2</button>
+      <button class="filter-btn" data-level="C1">C1</button>
+    </div>
+
+    <!-- Topic filter -->
+    <div class="filter-row" id="topic-filter">
+      <button class="filter-btn active" data-topic="all">全部</button>
+      <button class="filter-btn" data-topic="World News">🌍 新聞</button>
+      <button class="filter-btn" data-topic="Business">💹 財經</button>
+      <button class="filter-btn" data-topic="Health">🏥 健康</button>
+      <button class="filter-btn" data-topic="Lifestyle">✨ 生活</button>
+      <button class="filter-btn" data-topic="Tech News">📱 科技</button>
+      <button class="filter-btn" data-topic="Science">🔬 科學</button>
+      <button class="filter-btn" data-topic="Culture">🎭 文化</button>
+      <button class="filter-btn" data-topic="Travel">✈️ 旅遊</button>
+      <button class="filter-btn" data-topic="Food">🍜 飲食</button>
+      <button class="filter-btn" data-topic="Nature">🌿 自然</button>
+      <button class="filter-btn" data-topic="History">🏛️ 歷史</button>
+      <button class="filter-btn" data-topic="Sports">⚽ 運動</button>
+    </div>
+
+    <div id="article-list"></div>
+  </div><!-- /explore-view -->
+
+  <!-- ══ READ VIEW ══ -->
+  <div id="read-view">
+    <div class="article-header">
+      <button class="back-btn" id="back-btn">← 返回</button>
+      <div class="word-count" id="word-count"></div>
+    </div>
+    <div class="hint-bar"><span>👆</span><span>點任何單字查看翻譯</span></div>
+    <div class="speed-bar">
+      <span class="speed-label">語速</span>
+      <div class="speed-slider-wrap">
+        <div class="custom-slider" id="speed-slider">
+          <div class="custom-track">
+            <div class="custom-fill" id="speed-fill"></div>
+            <div class="custom-thumb" id="speed-thumb"></div>
+          </div>
+        </div>
+        <span class="speed-value" id="speed-value">0.9x</span>
+      </div>
+    </div>
+    <div class="read-aloud-row">
+      <button class="read-aloud-btn read-aloud-main" id="read-aloud-btn">
+        <span id="read-aloud-icon">🔊</span>
+        <span id="read-aloud-label">朗讀全文</span>
+      </button>
+      <button class="read-aloud-btn read-aloud-pause" id="pause-btn" style="display:none;">
+        <span id="pause-icon">⏸</span>
+      </button>
+    </div>
+    <div id="article-body"></div>
+    <div id="translation-section" style="display:none;">
+      <div class="translation-divider"><span>中文翻譯</span></div>
+      <div id="translation-body" class="translation-body"></div>
+    </div>
+    <button class="translate-all-btn" id="translate-all-btn">
+      <span id="translate-all-icon">🌐</span>
+      <span id="translate-all-label">顯示全文翻譯</span>
+    </button>
+  </div><!-- /read-view -->
+
+  <!-- ══ VOCAB VIEW ══ -->
+  <div id="vocab-view">
+    <div class="vocab-count" id="vocab-count"></div>
+    <div class="vocab-speed-bar">
+      <span class="speed-label">語速</span>
+      <div class="speed-slider-wrap">
+        <div class="custom-slider" id="vocab-speed-slider">
+          <div class="custom-track">
+            <div class="custom-fill" id="vocab-speed-fill"></div>
+            <div class="custom-thumb" id="vocab-speed-thumb"></div>
+          </div>
+        </div>
+        <span class="speed-value" id="vocab-speed-value">0.9x</span>
+      </div>
+    </div>
+    <div id="vocab-list"></div>
+  </div><!-- /vocab-view -->
+
+  <!-- ══ LIBRARY VIEW ══ -->
+  <div id="library-view">
+    <div class="library-header">
+      <div class="vocab-count" id="library-count"></div>
+      <button class="review-btn" id="review-btn">🎴 開始複習</button>
+    </div>
+    <div class="lib-io-row">
+      <button class="lib-io-btn" id="export-btn">⬇ 匯出備份</button>
+      <label class="lib-io-btn">
+        ⬆ 匯入還原
+        <input type="file" id="import-input" accept=".json" style="display:none;" />
+      </label>
+    </div>
+    <div id="library-list"></div>
+
+    <!-- Flashcard overlay -->
+    <div id="flashcard-overlay" style="display:none;">
+      <div class="flashcard-wrap">
+        <div class="flashcard-progress">
+          <div class="flashcard-progress-bar" id="fc-progress-bar"></div>
+        </div>
+        <div id="flashcard" class="flashcard">
+          <div class="fc-front">
+            <div class="fc-word" id="fc-word"></div>
+            <div class="fc-phonetic" id="fc-phonetic"></div>
+            <div class="fc-tap-hint">點擊翻面</div>
+          </div>
+          <div class="fc-back" id="fc-back" style="display:none;">
+            <div class="fc-word" id="fc-word-back"></div>
+            <div class="fc-pos"  id="fc-pos"></div>
+            <div class="fc-translation" id="fc-translation"></div>
+            <div class="fc-example"     id="fc-example"></div>
+          </div>
+        </div>
+        <div class="fc-btn-row" id="fc-btn-row" style="display:none;">
+          <button class="fc-btn fc-wrong" id="fc-wrong">✗ 不熟</button>
+          <button class="fc-btn fc-right" id="fc-right">✓ 認識</button>
+        </div>
+        <button class="fc-close" id="fc-close">✕ 結束複習</button>
+      </div>
+    </div>
+  </div><!-- /library-view -->
+
+  <!-- ══ CHAT VIEW ══ -->
+  <div id="chat-view">
+    <div id="chat-home"></div>
+    <div id="chat-screen" style="display:none;flex-direction:column;flex:1;">
+      <div class="chat-topbar">
+        <div class="chat-scenario-label" id="chat-scenario-label"></div>
+        <div style="display:flex;gap:6px;">
+          <button class="chat-top-btn" id="voice-mode-btn">🎤 語音</button>
+          <button class="chat-top-btn" id="translate-toggle-btn">🌐 翻譯</button>
+          <button class="chat-top-btn danger" id="end-chat-btn">結束</button>
+        </div>
+      </div>
+      <div id="chat-messages"></div>
+      <div class="chat-input-bar">
+        <button class="mic-btn" id="mic-btn" style="display:none;">🎤</button>
+        <textarea id="chat-input" class="chat-input" placeholder="Type your message in English..." rows="1"></textarea>
+        <button class="chat-send-btn" id="chat-send-btn">➤</button>
+      </div>
+    </div>
+    <div id="chat-feedback" style="display:none;flex-direction:column;gap:14px;">
+      <div class="feedback-header">
+        <div class="feedback-title">📊 對話分析</div>
+        <button class="chat-top-btn" id="new-chat-btn">重新開始</button>
+      </div>
+      <div id="feedback-body"></div>
+    </div>
+  </div><!-- /chat-view -->
+
+</main>
+
+<!-- ══ WORD POPUP ══ -->
+<div id="popup-overlay">
+  <div id="popup">
+    <div class="popup-header">
+      <div class="popup-word" id="popup-word"></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="popup-speak-btn" id="popup-speak">🔊</button>
+        <button class="popup-close"     id="popup-close">✕</button>
+      </div>
+    </div>
+    <div class="popup-body">
+      <div class="popup-meta"        id="popup-meta"></div>
+      <div class="popup-translation" id="popup-translation"></div>
+      <div class="popup-phonetic"    id="popup-phonetic"></div>
+      <div class="popup-example"     id="popup-example"></div>
+      <div class="popup-speed-row">
+        <button class="popup-speed-adj" id="popup-speed-down">－</button>
+        <span   class="popup-speed-display" id="popup-speed-display">0.9x</span>
+        <button class="popup-speed-adj" id="popup-speed-up">＋</button>
+      </div>
+      <div class="popup-actions">
+        <button class="popup-save-btn" id="popup-save">＋ 加入單字本</button>
+        <button class="popup-save-btn" id="popup-lib-save" style="background:#4a7c59;">＋ 單字庫</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ES Module entry point -->
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
